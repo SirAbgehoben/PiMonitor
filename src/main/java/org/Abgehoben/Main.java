@@ -2,19 +2,17 @@ package org.Abgehoben;
 
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamPanel;
-import com.github.sarxos.webcam.WebcamResolution;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.List;
 
 public class Main extends JFrame {
 
     private Webcam webcam;
     private WebcamPanel webcamPanel;
-    private JButton switchButton;
 
     public Main() {
         super("Webcam Application");
@@ -27,31 +25,49 @@ public class Main extends JFrame {
             JOptionPane.showMessageDialog(this, "No webcam found!");
             System.exit(1);
         }
-        webcam.setViewSize(WebcamResolution.VGA.getSize());
+
+        // Set initial resolution
+        setWebcamResolution();
 
         webcamPanel = new WebcamPanel(webcam);
-        webcamPanel.setMirrored(true); // Mirror the image (optional)
+        webcamPanel.setMirrored(false); // Mirror the image (optional)
         add(webcamPanel, BorderLayout.CENTER);
 
         // Button to switch webcams
-        switchButton = new JButton("Switch Webcam");
-        switchButton.setBackground(Color.BLACK);
-        switchButton.setForeground(Color.WHITE);
-        switchButton.addActionListener(new ActionListener() {
+        JPanel buttonPanel = getJPanel();
+        add(buttonPanel, BorderLayout.NORTH);
+
+        // Add component listener to handle resizing
+        addComponentListener(new ComponentAdapter() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                showWebcamSelectionDialog();
+            public void componentResized(ComponentEvent e) {
+                setWebcamResolution();
+                revalidate();
+                repaint();
             }
         });
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-        buttonPanel.add(switchButton);
-        add(buttonPanel, BorderLayout.NORTH);
 
         pack();
         setLocationRelativeTo(null); // Center the window
         setVisible(true);
+    }
+
+    private void setWebcamResolution() {
+        Dimension newSize = getContentPane().getSize();
+        webcam.setViewSize(newSize);
+        webcamPanel.setPreferredSize(newSize);
+    }
+
+    private JPanel getJPanel() {
+        JButton switchButton = new JButton("Switch Webcam");
+        switchButton.setBackground(Color.BLACK);
+        switchButton.setForeground(Color.WHITE);
+        switchButton.addActionListener(e -> showWebcamSelectionDialog());
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        buttonPanel.add(switchButton);
+        return buttonPanel;
     }
 
     private void showWebcamSelectionDialog() {
@@ -74,7 +90,7 @@ public class Main extends JFrame {
 
             // Update webcam and panel
             webcam = selectedWebcam;
-            webcam.setViewSize(WebcamResolution.VGA.getSize());
+            setWebcamResolution();
             webcam.open();
 
             remove(webcamPanel);
@@ -89,6 +105,6 @@ public class Main extends JFrame {
 
     public static void main(String[] args) {
         // Use SwingUtilities for thread safety
-        SwingUtilities.invokeLater(() -> new Main());
+        SwingUtilities.invokeLater(Main::new);
     }
 }
